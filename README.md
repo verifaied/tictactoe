@@ -1,4 +1,4 @@
-# Tic Tac Toe (neon)
+# Tic Tac Toe
 
 A small tic-tac-toe game and the demo repository for [verifAIed](https://verifaied.app):
 its tests, coverage and browser tests are what the verifAIed docs and videos show.
