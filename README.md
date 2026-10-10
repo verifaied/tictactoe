@@ -49,11 +49,6 @@ make codegen     # OpenAPI schema -> frontend/src/client
   `coverage.json` and `junit.xml` at the repo root.
 - **Frontend**: vitest with Testing Library, using the Istanbul coverage provider.
   This writes `frontend/coverage/coverage-final.json` and `frontend/junit.xml`.
-- **Browser**: `.verifaied/tests/**` are recorded-test specs that verifAIed runs
-  against `http://localhost:5173` (`.verifaied/config.toml`). Keep both servers up.
-
-CI (`.github/workflows/coverage.yml`) runs both suites and uploads all four files
-as a single `coverage` artifact.
 
 ## Deliberate gaps
 
