@@ -39,3 +39,24 @@ def win_rate(results: list[GameResult], difficulty: str) -> float | None:
 def hard_bot_unbeaten(results: list[GameResult]) -> bool:
     """True when X has never beaten the hard bot."""
     return not any(r.winner == X and r.difficulty == "hard" for r in results)
+
+
+def draw_rate(results: list[GameResult], difficulty: str) -> float | None:
+    """Fraction of games at `difficulty` that ended in a draw, or None if none were played."""
+    played = [r for r in results if r.difficulty == difficulty]
+    if not played:
+        return None
+    return sum(1 for r in played if r.winner is None) / len(played)
+
+
+def longest_streak(results: list[GameResult], winner: str | None) -> int:
+    """Longest run of consecutive games with this outcome, in the order played."""
+    best = 0
+    current = 0
+    for r in results:
+        if r.winner == winner:
+            current += 1
+            best = max(best, current)
+        else:
+            current = 0
+    return best

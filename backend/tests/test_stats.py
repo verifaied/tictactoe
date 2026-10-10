@@ -1,6 +1,12 @@
 from fastapi.testclient import TestClient
 
-from app.logic.stats import GameResult, count_outcomes, hard_bot_unbeaten, win_rate
+from app.logic.stats import (
+    GameResult,
+    count_outcomes,
+    draw_rate,
+    hard_bot_unbeaten,
+    win_rate,
+)
 
 GAMES = [
     GameResult(winner="x", difficulty="easy"),
@@ -24,6 +30,11 @@ class TestWinRate:
 
     def test_no_games(self):
         assert win_rate([], "hard") is None
+
+
+class TestDrawRate:
+    def test_hard(self):
+        assert draw_rate(GAMES, "hard") == 2 / 3
 
 
 class TestHardBotUnbeaten:
