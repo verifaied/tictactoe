@@ -84,6 +84,17 @@ describe("PlayPage", () => {
     expect(cell(1).querySelector(".glyph-x")).not.toBeNull();
   });
 
+  it("ignores the key for a filled cell", async () => {
+    renderPlay();
+    await userEvent.keyboard("1");
+    await waitFor(() => expect(status()).toHaveTextContent("Your move"));
+    // Seed 42's easy bot answers cell 1 with cell 6.
+    await userEvent.keyboard("6");
+    expect(status()).toHaveTextContent("Your move");
+    expect(cell(6).querySelector(".glyph-o")).not.toBeNull();
+    expect(cell(6).querySelector(".glyph-x")).toBeNull();
+  });
+
   it("ignores clicks while the bot thinks", async () => {
     renderPlay();
     await userEvent.click(cell(1));
@@ -168,5 +179,87 @@ describe("PlayPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Reset scores" }));
     expect(screen.getByTestId("score-you")).toHaveTextContent("0");
     expect(screen.getByTestId("score-bot")).toHaveTextContent("0");
+  });
+
+  describe("undo", () => {
+    const undoButton = () => screen.getByRole("button", { name: "Undo move" });
+    const mark = (n: number) =>
+      cell(n).querySelector(".glyph-x")
+        ? "x"
+        : cell(n).querySelector(".glyph-o")
+          ? "o"
+          : ".";
+    const boardText = () => [1, 2, 3, 4, 5, 6, 7, 8, 9].map(mark).join("");
+
+    it("is disabled before the first move", () => {
+      renderPlay();
+      expect(undoButton()).toBeDisabled();
+    });
+
+    it("takes back your move and the bot's reply, all the way to the start", async () => {
+      renderPlay();
+      // Seed 42's easy bot answers cell 1 with cell 6, then cell 2 with cell 5.
+      await playAndWait(1);
+      await playAndWait(2);
+      expect(boardText()).toBe("xx..oo...");
+
+      await userEvent.click(undoButton());
+      expect(boardText()).toBe("x....o...");
+      expect(status()).toHaveTextContent("Your move");
+      expect(undoButton()).toBeEnabled();
+
+      await userEvent.click(undoButton());
+      expect(boardText()).toBe(".........");
+      expect(undoButton()).toBeDisabled();
+      expect(cell(1)).toBeEnabled();
+    });
+
+    it("is disabled while the bot thinks", async () => {
+      renderPlay();
+      await userEvent.click(cell(1));
+      expect(status()).toHaveTextContent("Bot is thinking…");
+      expect(undoButton()).toBeDisabled();
+      await waitFor(() => expect(undoButton()).toBeEnabled());
+    });
+
+    it("reopens a finished game and uncounts its result", async () => {
+      renderPlay();
+      await playAndWait(1);
+      await playAndWait(2);
+      await userEvent.click(cell(3));
+      expect(status()).toHaveTextContent("X wins");
+      expect(screen.getByTestId("score-you")).toHaveTextContent("1");
+
+      await userEvent.click(undoButton());
+      expect(status()).toHaveTextContent("Your move");
+      expect(boardText()).toBe("xx..oo...");
+      expect(screen.queryByTestId("winning-line")).toBeNull();
+      expect(screen.getByTestId("score-you")).toHaveTextContent("0");
+      expect(JSON.parse(localStorage.getItem(SCORES_KEY)!)).toEqual({
+        you: 0,
+        draws: 0,
+        bot: 0,
+      });
+      expect(JSON.parse(localStorage.getItem(HISTORY_KEY)!)).toEqual([]);
+    });
+
+    it("takes back a move the offline bot never answered", async () => {
+      vi.mocked(postBotMove).mockResolvedValue({ data: undefined } as never);
+      renderPlay("/");
+      await userEvent.click(screen.getByRole("button", { name: "Hard" }));
+      await playAndWait(5);
+      expect(status()).toHaveTextContent("Bot is offline, start the API");
+
+      await userEvent.click(undoButton());
+      expect(boardText()).toBe(".........");
+      expect(status()).toHaveTextContent("Your move");
+    });
+
+    it("forgets the undo history on a new game", async () => {
+      renderPlay();
+      await playAndWait(1);
+      await userEvent.click(screen.getByRole("button", { name: "New game" }));
+      expect(undoButton()).toBeDisabled();
+    });
   });
 });

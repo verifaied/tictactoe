@@ -52,6 +52,12 @@ export function addScore(scores: Scores, result: Outcome): Scores {
   return { ...scores, draws: scores.draws + 1 };
 }
 
+/** Take back a result counted by `addScore`, never going below zero. */
+export function removeScore(scores: Scores, result: Outcome): Scores {
+  const field = result === "x" ? "you" : result === "o" ? "bot" : "draws";
+  return { ...scores, [field]: Math.max(0, scores[field] - 1) };
+}
+
 export function winRate(
   games: GameRecord[],
   difficulty: Difficulty,

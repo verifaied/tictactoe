@@ -20,6 +20,7 @@ import {
   HISTORY_KEY,
   HISTORY_LIMIT,
   NO_SCORES,
+  removeScore,
   SCORES_KEY,
   useStored,
 } from "@/lib/storage";
@@ -49,6 +50,8 @@ export function PlayPage() {
   const { reroll } = usePalette();
 
   const [board, setBoard] = useState(EMPTY_BOARD);
+  /** The board before each of your moves, oldest first, so undo can step back. */
+  const [past, setPast] = useState<string[]>([]);
   const [status, setStatus] = useState<Status>("your-move");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [game, setGame] = useState(0);
@@ -82,6 +85,7 @@ export function PlayPage() {
       return;
     }
     const afterYou = place(board, index, "x");
+    setPast((p) => [...p, board]);
     setBoard(afterYou);
     const youEnded = outcome(afterYou);
     if (youEnded) {
@@ -106,16 +110,32 @@ export function PlayPage() {
     }
   };
 
+  const over = status === "x" || status === "o" || status === "draw";
+
+  const canUndo = past.length > 0 && status !== "thinking";
+
+  /** Take back your last move and the bot's reply to it. Only offered when `canUndo`. */
+  const undo = () => {
+    if (over) {
+      // The finished game was already counted; uncount it.
+      const result = status;
+      setScores((s) => removeScore(s, result));
+      setHistory((h) => h.slice(1));
+    }
+    setBoard(past[past.length - 1]);
+    setPast((p) => p.slice(0, -1));
+    setStatus("your-move");
+  };
+
   const newGame = () => {
     setBoard(EMPTY_BOARD);
+    setPast([]);
     setStatus("your-move");
     setGame((g) => g + 1);
     reroll();
   };
 
   useKeyboardMoves(play, status === "your-move");
-
-  const over = status === "x" || status === "o" || status === "draw";
 
   return (
     <div className="play">
@@ -156,6 +176,15 @@ export function PlayPage() {
             ))}
           </div>
         </div>
+
+        <button
+          type="button"
+          className="btn"
+          disabled={!canUndo}
+          onClick={undo}
+        >
+          Undo move
+        </button>
 
         <button
           type="button"

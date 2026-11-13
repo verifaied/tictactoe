@@ -6,6 +6,7 @@ import {
   addScore,
   NO_SCORES,
   readJson,
+  removeScore,
   timeAgo,
   useStored,
   winRate,
@@ -55,6 +56,20 @@ describe("useStored", () => {
     localStorage.setItem("n", "9");
     const { result } = renderHook(() => useStored("n", 1));
     expect(result.current[0]).toBe(9);
+  });
+});
+
+describe("removeScore", () => {
+  const scores = { you: 2, draws: 3, bot: 4 };
+
+  it("takes one result back from the matching tally", () => {
+    expect(removeScore(scores, "x")).toEqual({ you: 1, draws: 3, bot: 4 });
+    expect(removeScore(scores, "o")).toEqual({ you: 2, draws: 3, bot: 3 });
+    expect(removeScore(scores, "draw")).toEqual({ you: 2, draws: 2, bot: 4 });
+  });
+
+  it("never goes below zero", () => {
+    expect(removeScore(NO_SCORES, "x")).toEqual(NO_SCORES);
   });
 });
 
